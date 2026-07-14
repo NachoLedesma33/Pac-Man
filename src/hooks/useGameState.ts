@@ -7,6 +7,16 @@ import { createPacman, updatePacman } from '../engine/pacman'
 import { createGhost, updateGhost, setGhostMode } from '../engine/ghost'
 import { checkPacmanGhostCollision, calculateGhostScore } from '../engine/collision'
 
+export interface GameStats {
+  dotsEaten: number
+  ghostsEaten: number
+  powerPillsUsed: number
+  maxCombo: number
+  level: number
+  lives: number
+  score: number
+}
+
 function createInitialState(difficulty: Difficulty): GameState {
   const settings = GAME_CONFIG.DIFFICULTY[difficulty]
   const map = createMap()
@@ -41,11 +51,30 @@ export function useGameState() {
   const [gameState, setGameState] = useState<GameState>(() =>
     createInitialState('NORMAL')
   )
+  const [gameStats, setGameStats] = useState<GameStats>({
+    dotsEaten: 0,
+    ghostsEaten: 0,
+    powerPillsUsed: 0,
+    maxCombo: 0,
+    level: 1,
+    lives: 3,
+    score: 0,
+  })
   const gameStateRef = useRef(gameState)
   gameStateRef.current = gameState
 
   const startGame = useCallback((difficulty: Difficulty = 'NORMAL') => {
+    const settings = GAME_CONFIG.DIFFICULTY[difficulty]
     setGameState(createInitialState(difficulty))
+    setGameStats({
+      dotsEaten: 0,
+      ghostsEaten: 0,
+      powerPillsUsed: 0,
+      maxCombo: 0,
+      level: 1,
+      lives: settings.startingLives,
+      score: 0,
+    })
   }, [])
 
   const togglePause = useCallback(() => {
@@ -80,7 +109,6 @@ export function useGameState() {
           ? GAME_CONFIG.TIMING.CHASE_DURATION
           : GAME_CONFIG.TIMING.SCATTER_DURATION
 
-        // Update ghost modes
         const newMode = newState.isChaseMode ? 'CHASE' as const : 'SCATTER' as const
         newState.ghosts = newState.ghosts.map(g => setGhostMode(g, newMode))
       }
@@ -106,6 +134,7 @@ export function useGameState() {
         if (cellType === 'DOT') {
           newState.score += GAME_CONFIG.POINTS.DOT
           newState.dotsRemaining--
+          setGameStats(prev => ({ ...prev, dotsEaten: prev.dotsEaten + 1, score: newState.score }))
           newState.map = newState.map.map((row, ri) =>
             ri === y ? row.map((cell, ci) => ci === x ? 'EMPTY' as const : cell) : row
           )
@@ -114,11 +143,16 @@ export function useGameState() {
           newState.dotsRemaining--
           newState.frightenedTimeRemaining = settings.frightenedDuration
           newState.comboCount = 0
+          setGameStats(prev => ({
+            ...prev,
+            dotsEaten: prev.dotsEaten + 1,
+            powerPillsUsed: prev.powerPillsUsed + 1,
+            score: newState.score,
+          }))
           newState.map = newState.map.map((row, ri) =>
             ri === y ? row.map((cell, ci) => ci === x ? 'EMPTY' as const : cell) : row
           )
 
-          // Set all ghosts to frightened
           newState.ghosts = newState.ghosts.map(g =>
             setGhostMode(g, 'FRIGHTENED', settings.frightenedDuration)
           )
@@ -128,6 +162,11 @@ export function useGameState() {
         if (newState.dotsRemaining <= 0) {
           newState.score += GAME_CONFIG.POINTS.LEVEL_COMPLETE
           newState.level++
+          setGameStats(prev => ({
+            ...prev,
+            level: newState.level,
+            score: newState.score,
+          }))
           const newMap = createMap()
           newState.map = newMap
           newState.dotsRemaining = countDots(newMap)
@@ -154,26 +193,29 @@ export function useGameState() {
       const collision = checkPacmanGhostCollision(newState.pacman, newState.ghosts)
       if (collision.collided) {
         if (collision.wasFrightened) {
-          // Eat the ghost
           const ghostScore = calculateGhostScore(newState.comboCount)
           newState.score += ghostScore
           newState.comboCount++
+          setGameStats(prev => ({
+            ...prev,
+            ghostsEaten: prev.ghostsEaten + 1,
+            maxCombo: Math.max(prev.maxCombo, newState.comboCount),
+            score: newState.score,
+          }))
           newState.ghosts = newState.ghosts.map((g, i) =>
             i === collision.ghostIndex ? setGhostMode(g, 'EATEN') : g
           )
         } else {
-          // Pac-Man dies
           newState.lives--
+          setGameStats(prev => ({ ...prev, lives: newState.lives }))
           if (newState.lives <= 0) {
             newState.isGameOver = true
             newState.isPlaying = false
-            // Update high score
             if (newState.score > newState.highScore) {
               newState.highScore = newState.score
               localStorage.setItem('pacman-highscore', newState.highScore.toString())
             }
           } else {
-            // Reset positions
             newState.pacman = createPacman(PACMAN_SPAWN, settings.pacmanSpeed * 5)
             newState.ghosts = [
               createGhost('BLINKY', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[0]),
@@ -193,6 +235,7 @@ export function useGameState() {
 
   return {
     gameState,
+    gameStats,
     startGame,
     togglePause,
     setDirection,

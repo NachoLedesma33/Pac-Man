@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import { Layout } from './components/layout/Layout'
 import { ThemeToggle } from './components/ui/ThemeToggle'
@@ -6,13 +6,17 @@ import { WelcomeScreen } from './components/game/WelcomeScreen'
 import { ArcadeCabinet } from './components/arcade/ArcadeCabinet'
 import { ScoreBoard } from './components/game/ScoreBoard'
 import { GameBoard } from './components/game/GameBoard'
+import { AchievementPanel } from './components/game/AchievementPanel'
+import { Leaderboard, NameInput } from './components/game/Leaderboard'
 import { DPad } from './components/ui/DPad'
 import { Modal } from './components/ui/Modal'
 import { ToastContainer, useToast } from './components/ui/Toast'
 import { useGameState } from './hooks/useGameState'
 import { useGameLoop } from './hooks/useGameLoop'
 import { useKeyboard } from './hooks/useKeyboard'
-import { Settings, Pause, Play, RotateCcw } from 'lucide-react'
+import { useAchievements } from './hooks/useAchievements'
+import { useLeaderboard } from './components/game/Leaderboard'
+import { Settings, Pause, Play, RotateCcw, Trophy, Award } from 'lucide-react'
 import type { Direction, Difficulty } from './types/game'
 
 type GameScreen = 'menu' | 'playing' | 'gameover'
@@ -20,17 +24,24 @@ type GameScreen = 'menu' | 'playing' | 'gameover'
 function App() {
   const [screen, setScreen] = useState<GameScreen>('menu')
   const [showSettings, setShowSettings] = useState(false)
+  const [showAchievements, setShowAchievements] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [crtEnabled, setCrtEnabled] = useState(true)
   const [difficulty, setDifficulty] = useState<Difficulty>('NORMAL')
   const { toasts, addToast, removeToast } = useToast()
 
   const {
     gameState,
+    gameStats,
     startGame,
     togglePause,
     setDirection,
     updateGame,
   } = useGameState()
+
+  const { state: achievementState, check, pendingToasts, popToast } = useAchievements()
+  const { entries: leaderboardEntries, addEntry, isHighScore } = useLeaderboard()
+  const [showNameInput, setShowNameInput] = useState(false)
 
   // Game loop
   useGameLoop({
@@ -55,6 +66,22 @@ function App() {
     enabled: screen === 'playing',
   })
 
+  // Check achievements
+  useEffect(() => {
+    if (screen === 'playing' && gameState.isPlaying) {
+      check(gameStats)
+    }
+  }, [gameStats, screen, gameState.isPlaying, check])
+
+  // Handle achievement toasts
+  useEffect(() => {
+    if (pendingToasts.length > 0) {
+      const achievement = pendingToasts[0]
+      addToast(`🏆 ${achievement.name}`, achievement.description, 'achievement')
+      popToast()
+    }
+  }, [pendingToasts, addToast, popToast])
+
   // Handle game over
   const handleStart = useCallback(() => {
     startGame(difficulty)
@@ -69,12 +96,25 @@ function App() {
   }, [startGame, difficulty, addToast])
 
   // Check for game over
-  if (screen === 'playing' && gameState.isGameOver) {
-    setTimeout(() => {
-      setScreen('gameover')
-      addToast('Game Over', `Puntuación: ${gameState.score}`, 'info')
-    }, 1000)
-  }
+  useEffect(() => {
+    if (screen === 'playing' && gameState.isGameOver) {
+      const timer = setTimeout(() => {
+        setScreen('gameover')
+        addToast('Game Over', `Puntuación: ${gameState.score}`, 'info')
+        if (isHighScore(gameState.score)) {
+          setShowNameInput(true)
+        }
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [screen, gameState.isGameOver, gameState.score, addToast, isHighScore])
+
+  const handleNameSubmit = useCallback((initials: string) => {
+    addEntry(gameState.score, gameState.level, initials)
+    setShowNameInput(false)
+    setShowLeaderboard(true)
+    addToast('Guardado', `Puntuación guardada como ${initials}`, 'score')
+  }, [gameState.score, gameState.level, addEntry, addToast])
 
   return (
     <ThemeProvider>
@@ -107,6 +147,32 @@ function App() {
                   aria-label={gameState.isPaused ? 'Resume' : 'Pause'}
                 >
                   {gameState.isPaused ? <Play size={18} /> : <Pause size={18} />}
+                </button>
+                <button
+                  onClick={() => setShowAchievements(true)}
+                  className="
+                    w-10 h-10 bg-brutal-gray border-4 border-brutal-black
+                    flex items-center justify-center text-brutal-white
+                    shadow-[3px_3px_0px_0px_#FFE600]
+                    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                    transition-all duration-100 cursor-pointer
+                  "
+                  aria-label="Achievements"
+                >
+                  <Award size={18} />
+                </button>
+                <button
+                  onClick={() => setShowLeaderboard(true)}
+                  className="
+                    w-10 h-10 bg-brutal-gray border-4 border-brutal-black
+                    flex items-center justify-center text-brutal-white
+                    shadow-[3px_3px_0px_0px_#FFE600]
+                    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                    transition-all duration-100 cursor-pointer
+                  "
+                  aria-label="Leaderboard"
+                >
+                  <Trophy size={18} />
                 </button>
                 <button
                   onClick={() => setShowSettings(true)}
@@ -148,7 +214,7 @@ function App() {
                         GAME OVER
                       </p>
                       <p className="text-arcade-yellow text-xl mt-4 font-bold">
-                        Puntuación: {gameState.score}
+                        Puntuación: {gameState.score.toLocaleString()}
                       </p>
                       <button
                         onClick={handleRestart}
@@ -230,13 +296,25 @@ function App() {
                 ))}
               </div>
             </div>
-            <div className="border-t-2 border-brutal-black pt-4">
-              <p className="text-brutal-white text-xs opacity-60">
-                Los ajustes se aplicarán en la siguiente partida
-              </p>
-            </div>
           </div>
         </Modal>
+
+        {/* Achievements Modal */}
+        <Modal isOpen={showAchievements} onClose={() => setShowAchievements(false)} title="LOGROS">
+          <AchievementPanel achievementState={achievementState} />
+        </Modal>
+
+        {/* Leaderboard Modal */}
+        <Modal isOpen={showLeaderboard} onClose={() => setShowLeaderboard(false)} title="TOP SCORES">
+          <Leaderboard entries={leaderboardEntries} onClose={() => setShowLeaderboard(false)} />
+        </Modal>
+
+        {/* Name Input */}
+        <NameInput
+          isOpen={showNameInput}
+          onSubmit={handleNameSubmit}
+          onCancel={() => setShowNameInput(false)}
+        />
 
         {/* Toast Notifications */}
         <ToastContainer toasts={toasts} onRemove={removeToast} />
