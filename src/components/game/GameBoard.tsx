@@ -98,8 +98,8 @@ export function GameBoard({ gameState }: GameBoardProps) {
         <div
           className="absolute"
           style={{
-            left: pacman.position.x * cellSize,
-            top: pacman.position.y * cellSize,
+            left: pacman.position.x * cellSize + cellSize / 2,
+            top: pacman.position.y * cellSize + cellSize / 2,
             width: cellSize * 0.9,
             height: cellSize * 0.9,
             transform: 'translate(-50%, -50%)',
@@ -130,8 +130,8 @@ export function GameBoard({ gameState }: GameBoardProps) {
               key={ghost.name}
               className="absolute"
               style={{
-                left: ghost.position.x * cellSize,
-                top: ghost.position.y * cellSize,
+                left: ghost.position.x * cellSize + cellSize / 2,
+                top: ghost.position.y * cellSize + cellSize / 2,
                 width: cellSize * 0.85,
                 height: cellSize * 0.85,
                 transform: 'translate(-50%, -50%)',
