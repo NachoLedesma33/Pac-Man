@@ -169,7 +169,8 @@ export function GameBoard({ gameState }: GameBoardProps) {
 }
 
 function getPacmanPath(direction: string, mouthAngle: number): string {
-  const mouth = Math.abs(Math.sin(mouthAngle)) * 0.3
+  const rawMouth = Math.abs(Math.sin(mouthAngle))
+  const mouth = 0.05 + rawMouth * 0.25
   const cx = 12
   const cy = 12
   const r = 11
@@ -204,7 +205,6 @@ function getPacmanPath(direction: string, mouthAngle: number): string {
   const x2 = cx + r * Math.cos(endAngle)
   const y2 = cy + r * Math.sin(endAngle)
 
-  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
-
-  return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z`
+  // Always use the arc that covers most of the circle
+  return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 1 1 ${x2},${y2} Z`
 }

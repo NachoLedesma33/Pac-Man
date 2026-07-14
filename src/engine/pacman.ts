@@ -100,11 +100,15 @@ export function updatePacman(
     }
   }
 
-  // Tunnel wrapping
-  if (newPacman.position.x < -0.5) {
-    newPacman.position = { x: map[0].length - 0.5, y: newPacman.position.y }
-  } else if (newPacman.position.x > map[0].length - 0.5) {
-    newPacman.position = { x: -0.5, y: newPacman.position.y }
+  // Tunnel wrapping: only at tunnel row (y=14)
+  const px = Math.round(newPacman.position.x)
+  const py = Math.round(newPacman.position.y)
+  if (py === 14) {
+    if (px <= 0 && newPacman.direction === 'LEFT') {
+      newPacman.position = { x: map[0].length - 1, y: newPacman.position.y }
+    } else if (px >= map[0].length - 1 && newPacman.direction === 'RIGHT') {
+      newPacman.position = { x: 0, y: newPacman.position.y }
+    }
   }
 
   // Dot consumption: only at exact cell center
