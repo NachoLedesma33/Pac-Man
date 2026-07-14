@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import { Layout } from './components/layout/Layout'
 import { ThemeToggle } from './components/ui/ThemeToggle'
@@ -16,7 +16,8 @@ import { useGameLoop } from './hooks/useGameLoop'
 import { useKeyboard } from './hooks/useKeyboard'
 import { useAchievements } from './hooks/useAchievements'
 import { useLeaderboard } from './components/game/Leaderboard'
-import { Settings, Pause, Play, RotateCcw, Trophy, Award } from 'lucide-react'
+import { useSound } from './hooks/useSound'
+import { Settings, Pause, Play, RotateCcw, Trophy, Award, Volume2, VolumeX } from 'lucide-react'
 import type { Direction, Difficulty } from './types/game'
 
 type GameScreen = 'menu' | 'playing' | 'gameover'
@@ -27,6 +28,7 @@ function App() {
   const [showAchievements, setShowAchievements] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [crtEnabled, setCrtEnabled] = useState(true)
+  const [soundEnabled, setSoundEnabled] = useState(true)
   const [difficulty, setDifficulty] = useState<Difficulty>('NORMAL')
   const { toasts, addToast, removeToast } = useToast()
 
@@ -41,7 +43,62 @@ function App() {
 
   const { state: achievementState, check, pendingToasts, popToast } = useAchievements()
   const { entries: leaderboardEntries, addEntry, isHighScore } = useLeaderboard()
+  const sound = useSound()
   const [showNameInput, setShowNameInput] = useState(false)
+
+  // Track previous game state for sound triggers
+  const prevGameState = useRef(gameState)
+
+  // Sound effects based on game events
+  useEffect(() => {
+    if (!soundEnabled) return
+
+    // Dot eaten
+    if (gameState.score > prevGameState.current.score && !gameState.isGameOver) {
+      sound.waka()
+      sound.vibrate(50)
+    }
+
+    // Power pill
+    if (gameState.frightenedTimeRemaining > 0 && prevGameState.current.frightenedTimeRemaining === 0) {
+      sound.powerPill()
+      sound.vibrate(100)
+    }
+
+    // Ghost eaten
+    if (gameStats.ghostsEaten > (prevGameState.current as any).prevGhostsEaten) {
+      sound.eatGhost()
+      sound.vibrate(200)
+    }
+
+    // Level complete
+    if (gameState.level > prevGameState.current.level) {
+      sound.levelComplete()
+      sound.vibrate([100, 50, 100])
+    }
+
+    // Death
+    if (gameState.lives < prevGameState.current.lives && !gameState.isGameOver) {
+      sound.death()
+      sound.vibrate([200, 100, 200])
+    }
+
+    // Game over
+    if (gameState.isGameOver && !prevGameState.current.isGameOver) {
+      sound.gameOver()
+      sound.vibrate([300, 100, 300, 100, 300])
+    }
+
+    prevGameState.current = gameState
+  }, [gameState, gameStats, soundEnabled, sound])
+
+  // Achievement sound
+  useEffect(() => {
+    if (pendingToasts.length > 0 && soundEnabled) {
+      sound.achievement()
+      sound.vibrate([50, 50, 50, 50, 100])
+    }
+  }, [pendingToasts, soundEnabled, sound])
 
   // Game loop
   useGameLoop({
@@ -57,8 +114,9 @@ function App() {
   const handleAction = useCallback((action: 'PAUSE' | 'START') => {
     if (action === 'PAUSE' && screen === 'playing') {
       togglePause()
+      if (soundEnabled) sound.pause()
     }
-  }, [screen, togglePause])
+  }, [screen, togglePause, soundEnabled, sound])
 
   useKeyboard({
     onDirection: handleDirection,
@@ -82,18 +140,21 @@ function App() {
     }
   }, [pendingToasts, addToast, popToast])
 
-  // Handle game over
+  // Handle game start
   const handleStart = useCallback(() => {
+    sound.resume()
     startGame(difficulty)
     setScreen('playing')
+    if (soundEnabled) sound.startGame()
     addToast('Juego Iniciado', `Dificultad: ${difficulty}`, 'info')
-  }, [startGame, difficulty, addToast])
+  }, [startGame, difficulty, soundEnabled, sound, addToast])
 
   const handleRestart = useCallback(() => {
     startGame(difficulty)
     setScreen('playing')
+    if (soundEnabled) sound.startGame()
     addToast('Juego Reiniciado', `Dificultad: ${difficulty}`, 'info')
-  }, [startGame, difficulty, addToast])
+  }, [startGame, difficulty, soundEnabled, sound, addToast])
 
   // Check for game over
   useEffect(() => {
@@ -175,6 +236,20 @@ function App() {
                   <Trophy size={18} />
                 </button>
                 <button
+                  onClick={() => setSoundEnabled(prev => !prev)}
+                  className={`
+                    w-10 h-10 border-4 border-brutal-black
+                    flex items-center justify-center
+                    shadow-[3px_3px_0px_0px_#FFE600]
+                    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                    transition-all duration-100 cursor-pointer
+                    ${soundEnabled ? 'bg-brutal-gray text-brutal-white' : 'bg-ghost-red text-brutal-white'}
+                  `}
+                  aria-label={soundEnabled ? 'Mute' : 'Unmute'}
+                >
+                  {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                </button>
+                <button
                   onClick={() => setShowSettings(true)}
                   className="
                     w-10 h-10 bg-brutal-gray border-4 border-brutal-black
@@ -227,6 +302,7 @@ function App() {
                           active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
                           transition-all duration-100 cursor-pointer
                           flex items-center gap-2 mx-auto
+                          hover:bg-arcade-yellow-dark
                         "
                       >
                         <RotateCcw size={20} />
@@ -273,6 +349,19 @@ function App() {
                 `}
               >
                 {crtEnabled ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="text-brutal-white text-sm font-bold">Sonido</label>
+              <button
+                onClick={() => setSoundEnabled(prev => !prev)}
+                className={`
+                  w-16 h-8 border-4 border-brutal-black font-bold text-xs
+                  transition-all duration-150 cursor-pointer
+                  ${soundEnabled ? 'bg-arcade-yellow text-brutal-black' : 'bg-brutal-black text-brutal-white'}
+                `}
+              >
+                {soundEnabled ? 'ON' : 'OFF'}
               </button>
             </div>
             <div className="flex items-center justify-between">
