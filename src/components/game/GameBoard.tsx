@@ -170,41 +170,32 @@ export function GameBoard({ gameState }: GameBoardProps) {
 
 function getPacmanPath(direction: string, mouthAngle: number): string {
   const rawMouth = Math.abs(Math.sin(mouthAngle))
-  const mouth = 0.05 + rawMouth * 0.25
+  const mouth = 0.08 + rawMouth * 0.22
   const cx = 12
   const cy = 12
   const r = 11
 
-  let startAngle: number
-  let endAngle: number
-
+  // Mouth center angle for each direction
+  let mouthCenter: number
   switch (direction) {
-    case 'RIGHT':
-      startAngle = mouth
-      endAngle = Math.PI * 2 - mouth
-      break
-    case 'LEFT':
-      startAngle = Math.PI + mouth
-      endAngle = Math.PI - mouth
-      break
-    case 'DOWN':
-      startAngle = Math.PI / 2 + mouth
-      endAngle = Math.PI * 2 + Math.PI / 2 - mouth
-      break
-    case 'UP':
-      startAngle = -Math.PI / 2 + mouth
-      endAngle = Math.PI / 2 - mouth
-      break
-    default:
-      startAngle = mouth
-      endAngle = Math.PI * 2 - mouth
+    case 'RIGHT': mouthCenter = 0; break
+    case 'DOWN':  mouthCenter = Math.PI / 2; break
+    case 'LEFT':  mouthCenter = Math.PI; break
+    case 'UP':    mouthCenter = -Math.PI / 2; break
+    default:      mouthCenter = 0
   }
 
+  // Start and end of the mouth gap
+  const startAngle = mouthCenter - mouth
+  const endAngle = mouthCenter + mouth
+
+  // Points on the circle at mouth edges
   const x1 = cx + r * Math.cos(startAngle)
   const y1 = cy + r * Math.sin(startAngle)
   const x2 = cx + r * Math.cos(endAngle)
   const y2 = cy + r * Math.sin(endAngle)
 
-  // Always use the arc that covers most of the circle
+  // Draw: center → edge1 → large arc to edge2 → close
+  // large-arc-flag=1 draws the body (big arc), sweep-flag=1 is clockwise
   return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 1 1 ${x2},${y2} Z`
 }
