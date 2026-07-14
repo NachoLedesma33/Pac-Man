@@ -32,7 +32,7 @@ export function checkPacmanGhostCollision(
 
   for (let i = 0; i < ghosts.length; i++) {
     const ghost = ghosts[i]
-    if (ghost.isHome) continue
+    if (ghost.isHome || ghost.mode === 'EATEN') continue
 
     const dist = Math.sqrt(
       (pacman.position.x - ghost.position.x) ** 2 +

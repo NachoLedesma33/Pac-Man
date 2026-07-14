@@ -14,6 +14,8 @@ export function resumeAudio() {
   }
 }
 
+let wakaState = false
+
 export function playWaka() {
   const ctx = getAudioContext()
   const now = ctx.currentTime
@@ -22,17 +24,22 @@ export function playWaka() {
   const gain = ctx.createGain()
 
   osc.type = 'square'
-  osc.frequency.setValueAtTime(440, now)
-  osc.frequency.setValueAtTime(520, now + 0.05)
 
-  gain.gain.setValueAtTime(0.2, now)
-  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1)
+  // Classic Pac-Man waka alternates between two frequencies
+  const freq = wakaState ? 260 : 330
+  wakaState = !wakaState
+
+  osc.frequency.setValueAtTime(freq, now)
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.8, now + 0.06)
+
+  gain.gain.setValueAtTime(0.18, now)
+  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07)
 
   osc.connect(gain)
   gain.connect(ctx.destination)
 
   osc.start(now)
-  osc.stop(now + 0.1)
+  osc.stop(now + 0.07)
 }
 
 export function playPowerPill() {
