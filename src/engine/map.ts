@@ -7,19 +7,25 @@ export function createMap(): CellType[][] {
 }
 
 export function isWall(map: CellType[][], x: number, y: number): boolean {
-  if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return true
-  return map[y][x] === 'WALL'
+  const ix = Math.round(x)
+  const iy = Math.round(y)
+  if (ix < 0 || ix >= MAP_WIDTH || iy < 0 || iy >= MAP_HEIGHT) return true
+  return map[iy][ix] === 'WALL'
 }
 
 export function isWalkable(map: CellType[][], x: number, y: number): boolean {
-  if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false
-  const cell = map[y][x]
+  const ix = Math.round(x)
+  const iy = Math.round(y)
+  if (ix < 0 || ix >= MAP_WIDTH || iy < 0 || iy >= MAP_HEIGHT) return false
+  const cell = map[iy][ix]
   return cell !== 'WALL' && cell !== 'GHOST_HOUSE' && cell !== 'GHOST_DOOR'
 }
 
 export function isGhostWalkable(map: CellType[][], x: number, y: number, canEnterHouse: boolean): boolean {
-  if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false
-  const cell = map[y][x]
+  const ix = Math.round(x)
+  const iy = Math.round(y)
+  if (ix < 0 || ix >= MAP_WIDTH || iy < 0 || iy >= MAP_HEIGHT) return false
+  const cell = map[iy][ix]
   if (cell === 'WALL') return false
   if (cell === 'GHOST_HOUSE' || cell === 'GHOST_DOOR') return canEnterHouse
   return true
