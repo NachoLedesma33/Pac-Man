@@ -1,6 +1,6 @@
 import type { Pacman, Direction, CellType, Position } from '../types/game'
 import { GAME_CONFIG } from '../constants/game'
-import { canMove, isWalkable } from './map'
+import { isWalkable } from './map'
 
 export function createPacman(spawn: Position, speed: number): Pacman {
   return {
@@ -13,17 +13,13 @@ export function createPacman(spawn: Position, speed: number): Pacman {
   }
 }
 
-function isAtCellCenter(pos: Position): boolean {
-  const eps = 0.05
-  return Math.abs(pos.x - Math.round(pos.x)) < eps &&
-         Math.abs(pos.y - Math.round(pos.y)) < eps
+function cellCenter(pos: Position): Position {
+  return { x: Math.round(pos.x), y: Math.round(pos.y) }
 }
 
-function snapToCell(pos: Position): Position {
-  return {
-    x: Math.round(pos.x),
-    y: Math.round(pos.y),
-  }
+function distToCenter(pos: Position): number {
+  const center = cellCenter(pos)
+  return Math.abs(pos.x - center.x) + Math.abs(pos.y - center.y)
 }
 
 export function updatePacman(
@@ -34,73 +30,94 @@ export function updatePacman(
   const newPacman = { ...pacman }
 
   // Animate mouth
-  newPacman.mouthAngle += deltaTime * 0.008
+  newPacman.mouthAngle += deltaTime * 0.006
   if (newPacman.mouthAngle > Math.PI) {
     newPacman.mouthAngle = 0
     newPacman.mouthOpen = !newPacman.mouthOpen
   }
 
-  // Movement: cells per second based on speed multiplier
-  // Speed 1.0 = 8 cells/second at 1 cell per frame at 8fps... let's do simpler
-  // moveAmount = speed * deltaTime / cellTime
-  // We want Pac-Man to move smoothly between cells
-  // At speed 1.0, it should take ~125ms to cross one cell
-  const cellTime = 125 / newPacman.speed
-  const moveAmount = deltaTime / cellTime
+  const center = cellCenter(newPacman.position)
+  const atCenter = distToCenter(newPacman.position) < 0.02
 
-  const atCenter = isAtCellCenter(newPacman.position)
-
+  // Snap to center when very close
   if (atCenter) {
-    // Snap to exact center
-    newPacman.position = snapToCell(newPacman.position)
+    newPacman.position = { ...center }
+  }
 
-    // Try nextDirection first
-    if (newPacman.nextDirection && canMove(map, newPacman.position, newPacman.nextDirection)) {
-      newPacman.direction = newPacman.nextDirection
-      newPacman.nextDirection = null
+  const currentCenter = cellCenter(newPacman.position)
+
+  // At cell center: decide next direction and check if we can move
+  if (distToCenter(newPacman.position) < 0.02) {
+    // Try nextDirection first (pre-turn)
+    if (newPacman.nextDirection && newPacman.nextDirection !== newPacman.direction) {
+      const nx = currentCenter.x + GAME_CONFIG.DIRECTIONS[newPacman.nextDirection].x
+      const ny = currentCenter.y + GAME_CONFIG.DIRECTIONS[newPacman.nextDirection].y
+      if (isWalkable(map, nx, ny)) {
+        newPacman.direction = newPacman.nextDirection
+        newPacman.nextDirection = null
+      }
     }
 
-    // Check if we can continue in current direction
-    if (!canMove(map, newPacman.position, newPacman.direction)) {
-      // Hit a wall - stop by snapping and returning
+    // Check if current direction is blocked
+    const fx = currentCenter.x + GAME_CONFIG.DIRECTIONS[newPacman.direction].x
+    const fy = currentCenter.y + GAME_CONFIG.DIRECTIONS[newPacman.direction].y
+    if (!isWalkable(map, fx, fy)) {
+      // Blocked: stay at center
+      newPacman.position = { ...currentCenter }
       return { pacman: newPacman, cellConsumed: null }
     }
   }
 
-  // Move in current direction
+  // Speed: ms to cross one cell. Higher = slower.
+  const cellTime = 180 / newPacman.speed
+  const moveAmount = deltaTime / cellTime
+
+  // Move toward next cell center
   const offset = GAME_CONFIG.DIRECTIONS[newPacman.direction]
-  let newX = newPacman.position.x + offset.x * moveAmount
-  let newY = newPacman.position.y + offset.y * moveAmount
+  const targetX = currentCenter.x + offset.x
+  const targetY = currentCenter.y + offset.y
 
-  // Check if we would pass through a wall
-  const nextCellX = Math.round(newX + offset.x * 0.1)
-  const nextCellY = Math.round(newY + offset.y * 0.1)
-
-  if (!isWalkable(map, nextCellX, nextCellY)) {
-    // Would hit wall - snap to current cell center
-    newPacman.position = snapToCell(newPacman.position)
-  } else {
-    newPacman.position = { x: newX, y: newY }
+  // Check if target cell is walkable
+  if (!isWalkable(map, targetX, targetY)) {
+    newPacman.position = { ...currentCenter }
+    return { pacman: newPacman, cellConsumed: null }
   }
 
-  // Handle tunnel wrapping
+  // Move toward target, but never overshoot
+  const dx = targetX - newPacman.position.x
+  const dy = targetY - newPacman.position.y
+  const dist = Math.sqrt(dx * dx + dy * dy)
+
+  if (dist <= moveAmount) {
+    // Would reach or pass target - snap to target
+    newPacman.position = { x: targetX, y: targetY }
+  } else {
+    // Move toward target
+    const ratio = moveAmount / dist
+    newPacman.position = {
+      x: newPacman.position.x + dx * ratio,
+      y: newPacman.position.y + dy * ratio,
+    }
+  }
+
+  // Tunnel wrapping
   if (newPacman.position.x < -0.5) {
     newPacman.position = { x: map[0].length - 0.5, y: newPacman.position.y }
   } else if (newPacman.position.x > map[0].length - 0.5) {
     newPacman.position = { x: -0.5, y: newPacman.position.y }
   }
 
-  // Check dot consumption (only at cell center)
-  const cellX = Math.round(newPacman.position.x)
-  const cellY = Math.round(newPacman.position.y)
+  // Dot consumption: only at exact cell center
   let cellConsumed: Position | null = null
-
-  if (isAtCellCenter(newPacman.position) &&
-      cellX >= 0 && cellX < map[0].length &&
-      cellY >= 0 && cellY < map.length) {
-    const cell = map[cellY][cellX]
-    if (cell === 'DOT' || cell === 'POWER_PILL') {
-      cellConsumed = { x: cellX, y: cellY }
+  const finalCenter = cellCenter(newPacman.position)
+  if (distToCenter(newPacman.position) < 0.02) {
+    const cx = finalCenter.x
+    const cy = finalCenter.y
+    if (cx >= 0 && cx < map[0].length && cy >= 0 && cy < map.length) {
+      const cell = map[cy][cx]
+      if (cell === 'DOT' || cell === 'POWER_PILL') {
+        cellConsumed = { x: cx, y: cy }
+      }
     }
   }
 

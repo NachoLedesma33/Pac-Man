@@ -15,7 +15,7 @@ export function GameBoard({ gameState }: GameBoardProps) {
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center overflow-hidden"
+      className="w-full h-full flex items-center justify-center overflow-hidden p-2"
       style={{ imageRendering: 'pixelated' }}
     >
       <div
@@ -24,6 +24,7 @@ export function GameBoard({ gameState }: GameBoardProps) {
           width: mapW,
           height: mapH,
           transformOrigin: 'center center',
+          transform: `scale(${Math.min(1, 700 / mapW)})`,
         }}
       >
         {/* Map Layer */}
@@ -32,18 +33,20 @@ export function GameBoard({ gameState }: GameBoardProps) {
             row.map((cell, x) => {
               const cx = x * cellSize
               const cy = y * cellSize
+              const inset = 0.5
 
               if (cell === 'WALL') {
                 return (
                   <rect
                     key={`${x}-${y}`}
-                    x={cx}
-                    y={cy}
-                    width={cellSize}
-                    height={cellSize}
+                    x={cx + inset}
+                    y={cy + inset}
+                    width={cellSize - inset * 2}
+                    height={cellSize - inset * 2}
                     fill="#2121DE"
                     stroke="#000080"
-                    strokeWidth={0.5}
+                    strokeWidth={1}
+                    rx={2}
                   />
                 )
               }
@@ -54,7 +57,7 @@ export function GameBoard({ gameState }: GameBoardProps) {
                     key={`${x}-${y}`}
                     cx={cx + cellSize / 2}
                     cy={cy + cellSize / 2}
-                    r={2.5}
+                    r={3}
                     fill="#FFB8AE"
                   />
                 )
@@ -66,7 +69,7 @@ export function GameBoard({ gameState }: GameBoardProps) {
                     key={`${x}-${y}`}
                     cx={cx + cellSize / 2}
                     cy={cy + cellSize / 2}
-                    r={6}
+                    r={7}
                     fill="#FFB8AE"
                     className="animate-pulse"
                   />
@@ -97,20 +100,19 @@ export function GameBoard({ gameState }: GameBoardProps) {
           style={{
             left: pacman.position.x * cellSize,
             top: pacman.position.y * cellSize,
-            width: cellSize,
-            height: cellSize,
+            width: cellSize * 0.9,
+            height: cellSize * 0.9,
             transform: 'translate(-50%, -50%)',
-            transition: 'none',
           }}
         >
-          <svg viewBox="0 0 20 20" width={cellSize} height={cellSize}>
+          <svg viewBox="0 0 24 24" width="100%" height="100%">
             <path
               d={getPacmanPath(pacman.direction, pacman.mouthAngle)}
               fill="#FFE600"
               stroke="#000"
-              strokeWidth={0.5}
+              strokeWidth={1}
             />
-            <circle cx={10} cy={6} r={2} fill="#000" />
+            <circle cx={12} cy={7} r={2.5} fill="#000" />
           </svg>
         </div>
 
@@ -130,32 +132,31 @@ export function GameBoard({ gameState }: GameBoardProps) {
               style={{
                 left: ghost.position.x * cellSize,
                 top: ghost.position.y * cellSize,
-                width: cellSize,
-                height: cellSize,
+                width: cellSize * 0.85,
+                height: cellSize * 0.85,
                 transform: 'translate(-50%, -50%)',
-                transition: 'none',
               }}
             >
-              <svg viewBox="0 0 20 20" width={cellSize} height={cellSize}>
+              <svg viewBox="0 0 24 24" width="100%" height="100%">
                 {isEaten ? (
                   <>
-                    <circle cx={6} cy={9} r={2.5} fill="#FFF" stroke="#000" strokeWidth={0.5} />
-                    <circle cx={14} cy={9} r={2.5} fill="#FFF" stroke="#000" strokeWidth={0.5} />
-                    <circle cx={6} cy={9} r={1.2} fill="#00F" />
-                    <circle cx={14} cy={9} r={1.2} fill="#00F" />
+                    <circle cx={8} cy={10} r={3} fill="#FFF" stroke="#000" strokeWidth={0.5} />
+                    <circle cx={16} cy={10} r={3} fill="#FFF" stroke="#000" strokeWidth={0.5} />
+                    <circle cx={8} cy={10} r={1.5} fill="#00F" />
+                    <circle cx={16} cy={10} r={1.5} fill="#00F" />
                   </>
                 ) : (
                   <>
                     <path
-                      d="M1 19 L1 10 Q1 1 10 1 Q19 1 19 10 L19 19 L15 15.5 L12 19 L8 19 L5 15.5 Z"
+                      d="M2 22 L2 12 Q2 2 12 2 Q22 2 22 12 L22 22 L18 18 L14 22 L10 22 L6 18 Z"
                       fill={flashWarning ? '#FFF' : isFrightened ? GAME_CONFIG.COLORS.FRIGHTENED : ghost.color}
                       stroke="#000"
                       strokeWidth={0.5}
                     />
-                    <circle cx={7} cy={9} r={2.5} fill="#FFF" />
-                    <circle cx={13} cy={9} r={2.5} fill="#FFF" />
-                    <circle cx={7} cy={9} r={1.2} fill={isFrightened ? '#FFF' : '#00F'} />
-                    <circle cx={13} cy={9} r={1.2} fill={isFrightened ? '#FFF' : '#00F'} />
+                    <circle cx={8} cy={10} r={3} fill="#FFF" />
+                    <circle cx={16} cy={10} r={3} fill="#FFF" />
+                    <circle cx={8} cy={10} r={1.5} fill={isFrightened ? '#FFF' : '#00F'} />
+                    <circle cx={16} cy={10} r={1.5} fill={isFrightened ? '#FFF' : '#00F'} />
                   </>
                 )}
               </svg>
@@ -169,9 +170,9 @@ export function GameBoard({ gameState }: GameBoardProps) {
 
 function getPacmanPath(direction: string, mouthAngle: number): string {
   const mouth = Math.abs(Math.sin(mouthAngle)) * 0.3
-  const cx = 10
-  const cy = 10
-  const r = 9
+  const cx = 12
+  const cy = 12
+  const r = 11
 
   let startAngle: number
   let endAngle: number

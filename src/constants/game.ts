@@ -1,7 +1,7 @@
 import type { DifficultySettings } from '../types/game'
 
 export const GAME_CONFIG = {
-  CELL_SIZE: 20,
+  CELL_SIZE: 24,
   FPS: 60,
 
   POINTS: {

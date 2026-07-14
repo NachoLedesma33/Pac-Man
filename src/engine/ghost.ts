@@ -3,17 +3,13 @@ import { GAME_CONFIG } from '../constants/game'
 import { GHOST_SPAWNS, GHOST_SCATTER_TARGETS } from '../constants/map'
 import { getAvailableDirections, distance, getOppositeDirection, isGhostWalkable } from './map'
 
-function isAtCellCenter(pos: Position): boolean {
-  const eps = 0.05
-  return Math.abs(pos.x - Math.round(pos.x)) < eps &&
-         Math.abs(pos.y - Math.round(pos.y)) < eps
+function cellCenter(pos: Position): Position {
+  return { x: Math.round(pos.x), y: Math.round(pos.y) }
 }
 
-function snapToCell(pos: Position): Position {
-  return {
-    x: Math.round(pos.x),
-    y: Math.round(pos.y),
-  }
+function distToCenter(pos: Position): number {
+  const c = cellCenter(pos)
+  return Math.abs(pos.x - c.x) + Math.abs(pos.y - c.y)
 }
 
 export function createGhost(
@@ -49,21 +45,12 @@ function getChaseTarget(
       return pacmanPos
     case 'PINKY': {
       const offset = GAME_CONFIG.DIRECTIONS[pacmanDir]
-      return {
-        x: pacmanPos.x + offset.x * 4,
-        y: pacmanPos.y + offset.y * 4,
-      }
+      return { x: pacmanPos.x + offset.x * 4, y: pacmanPos.y + offset.y * 4 }
     }
     case 'INKY': {
       const offset = GAME_CONFIG.DIRECTIONS[pacmanDir]
-      const ahead = {
-        x: pacmanPos.x + offset.x * 2,
-        y: pacmanPos.y + offset.y * 2,
-      }
-      return {
-        x: ahead.x + (ahead.x - blinkyPos.x),
-        y: ahead.y + (ahead.y - blinkyPos.y),
-      }
+      const ahead = { x: pacmanPos.x + offset.x * 2, y: pacmanPos.y + offset.y * 2 }
+      return { x: ahead.x + (ahead.x - blinkyPos.x), y: ahead.y + (ahead.y - blinkyPos.y) }
     }
     case 'CLYDE': {
       const dist = distance(ghost.position, pacmanPos)
@@ -82,7 +69,6 @@ function chooseDirection(
   canEnterHouse: boolean
 ): Direction {
   const available = getAvailableDirections(map, ghost.position, canEnterHouse)
-
   if (available.length === 0) return getOppositeDirection(ghost.direction)
   if (available.length === 1) return available[0]
 
@@ -95,7 +81,6 @@ function chooseDirection(
 
   let bestDir = filtered[0]
   let bestDist = Infinity
-
   for (const dir of filtered) {
     const nextPos = {
       x: ghost.position.x + GAME_CONFIG.DIRECTIONS[dir].x,
@@ -107,7 +92,6 @@ function chooseDirection(
       bestDir = dir
     }
   }
-
   return bestDir
 }
 
@@ -143,77 +127,88 @@ export function updateGhost(
     }
   }
 
-  // Speed: cells per second
+  // Speed
   let speed = ghostSpeed
   if (newGhost.mode === 'FRIGHTENED') speed = frightenedSpeed
   if (newGhost.mode === 'EATEN') speed = ghostSpeed * 2.5
-  const cellTime = 125 / speed
+  const cellTime = 180 / speed
   const moveAmount = deltaTime / cellTime
 
-  const atCenter = isAtCellCenter(newGhost.position)
+  const currentCenter = cellCenter(newGhost.position)
+  const atCenter = distToCenter(newGhost.position) < 0.02
 
+  // Snap to center
   if (atCenter) {
-    newGhost.position = snapToCell(newGhost.position)
+    newGhost.position = { ...currentCenter }
+  }
 
-    // Get target based on mode
-    let target: Position
-    switch (newGhost.mode) {
-      case 'SCATTER':
-        target = newGhost.scatterTarget
-        break
-      case 'CHASE':
-        target = getChaseTarget(newGhost, pacmanPos, pacmanDir, blinkyPos)
-        break
-      case 'FRIGHTENED': {
-        const available = getAvailableDirections(map, newGhost.position, false)
-        const reverse = getOppositeDirection(newGhost.direction)
-        const filtered = available.filter(d => d !== reverse)
-        const choices = filtered.length > 0 ? filtered : available
-        if (choices.length > 0) {
-          newGhost.direction = choices[Math.floor(Math.random() * choices.length)]
-        }
-        target = newGhost.position
-        break
+  // At center: choose direction
+  if (distToCenter(newGhost.position) < 0.02) {
+    const center = cellCenter(newGhost.position)
+
+    // Frightened: random direction
+    if (newGhost.mode === 'FRIGHTENED') {
+      const available = getAvailableDirections(map, center, false)
+      const reverse = getOppositeDirection(newGhost.direction)
+      const filtered = available.filter(d => d !== reverse)
+      const choices = filtered.length > 0 ? filtered : available
+      if (choices.length > 0) {
+        newGhost.direction = choices[Math.floor(Math.random() * choices.length)]
       }
-      case 'EATEN':
-        target = GHOST_SPAWNS[newGhost.name]
-        if (distance(newGhost.position, target) < 1.5) {
-          newGhost.isHome = true
-          newGhost.homeTimer = 0
-          newGhost.mode = 'SCATTER'
-          return newGhost
-        }
-        break
-    }
-
-    // Choose direction at intersections
-    if (newGhost.mode !== 'FRIGHTENED') {
+    } else {
+      // Choose best direction toward target
+      let target: Position
+      switch (newGhost.mode) {
+        case 'SCATTER':
+          target = newGhost.scatterTarget
+          break
+        case 'CHASE':
+          target = getChaseTarget(newGhost, pacmanPos, pacmanDir, blinkyPos)
+          break
+        case 'EATEN':
+          target = GHOST_SPAWNS[newGhost.name]
+          if (distance(center, target) < 1.5) {
+            newGhost.isHome = true
+            newGhost.homeTimer = 0
+            newGhost.mode = 'SCATTER'
+            return newGhost
+          }
+          break
+      }
       newGhost.direction = chooseDirection(newGhost, map, target, newGhost.mode === 'EATEN')
     }
 
-    // Check if we can move
-    if (!isGhostWalkable(map,
-      newGhost.position.x + GAME_CONFIG.DIRECTIONS[newGhost.direction].x,
-      newGhost.position.y + GAME_CONFIG.DIRECTIONS[newGhost.direction].y,
-      false
-    )) {
+    // Check if next cell is walkable
+    const fx = center.x + GAME_CONFIG.DIRECTIONS[newGhost.direction].x
+    const fy = center.y + GAME_CONFIG.DIRECTIONS[newGhost.direction].y
+    if (!isGhostWalkable(map, fx, fy, false)) {
+      newGhost.position = { ...center }
       return newGhost
     }
   }
 
-  // Move
+  // Move toward next cell center
   const offset = GAME_CONFIG.DIRECTIONS[newGhost.direction]
-  let newX = newGhost.position.x + offset.x * moveAmount
-  let newY = newGhost.position.y + offset.y * moveAmount
+  const targetX = currentCenter.x + offset.x
+  const targetY = currentCenter.y + offset.y
 
-  // Check wall ahead
-  const checkX = Math.round(newX + offset.x * 0.1)
-  const checkY = Math.round(newY + offset.y * 0.1)
+  if (!isGhostWalkable(map, targetX, targetY, false)) {
+    newGhost.position = { ...cellCenter(newGhost.position) }
+    return newGhost
+  }
 
-  if (!isGhostWalkable(map, checkX, checkY, false)) {
-    newGhost.position = snapToCell(newGhost.position)
+  const dx = targetX - newGhost.position.x
+  const dy = targetY - newGhost.position.y
+  const dist = Math.sqrt(dx * dx + dy * dy)
+
+  if (dist <= moveAmount) {
+    newGhost.position = { x: targetX, y: targetY }
   } else {
-    newGhost.position = { x: newX, y: newY }
+    const ratio = moveAmount / dist
+    newGhost.position = {
+      x: newGhost.position.x + dx * ratio,
+      y: newGhost.position.y + dy * ratio,
+    }
   }
 
   return newGhost
