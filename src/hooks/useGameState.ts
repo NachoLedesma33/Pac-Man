@@ -98,7 +98,8 @@ export function useGameState() {
     setGameState(prev => {
       if (!prev.isPlaying || prev.isPaused || prev.isGameOver) return prev
 
-      const settings = GAME_CONFIG.DIFFICULTY[prev.difficulty]
+      const baseSettings = GAME_CONFIG.DIFFICULTY[prev.difficulty]
+      const settings = GAME_CONFIG.getLevelSettings(baseSettings, prev.level)
       let newState = { ...prev }
 
       // Update mode timer (scatter/chase cycle)
@@ -106,8 +107,8 @@ export function useGameState() {
       if (newState.modeTimer <= 0) {
         newState.isChaseMode = !newState.isChaseMode
         newState.modeTimer = newState.isChaseMode
-          ? GAME_CONFIG.TIMING.CHASE_DURATION
-          : GAME_CONFIG.TIMING.SCATTER_DURATION
+          ? GAME_CONFIG.getChaseDuration(prev.level)
+          : GAME_CONFIG.getScatterDuration(prev.level)
 
         const newMode = newState.isChaseMode ? 'CHASE' as const : 'SCATTER' as const
         newState.ghosts = newState.ghosts.map(g => setGhostMode(g, newMode))
@@ -171,6 +172,20 @@ export function useGameState() {
           newState.map = newMap
           newState.dotsRemaining = countDots(newMap)
           newState.totalDots = countDots(newMap)
+
+          // Recreate ghosts and pacman with new level's speed
+          const newSettings = GAME_CONFIG.getLevelSettings(baseSettings, newState.level)
+          newState.pacman = createPacman(PACMAN_SPAWN, newSettings.pacmanSpeed)
+          newState.ghosts = [
+            createGhost('BLINKY', newSettings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[0]),
+            createGhost('PINKY', newSettings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[1]),
+            createGhost('INKY', newSettings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[2]),
+            createGhost('CLYDE', newSettings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[3]),
+          ]
+          newState.frightenedTimeRemaining = 0
+          newState.comboCount = 0
+          newState.modeTimer = GAME_CONFIG.getScatterDuration(newState.level)
+          newState.isChaseMode = false
         }
       }
 

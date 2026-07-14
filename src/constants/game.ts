@@ -57,4 +57,23 @@ export const GAME_CONFIG = {
     FRIGHTENED_FLASH: '#FFFFFF',
     EATEN: '#FFFFFF',
   },
+
+  getLevelSettings(base: DifficultySettings, level: number): DifficultySettings {
+    const l = Math.min(level - 1, 20)
+    return {
+      ...base,
+      pacmanSpeed: base.pacmanSpeed + l * 0.02,
+      ghostSpeed: base.ghostSpeed + l * 0.04,
+      frightenedSpeed: base.frightenedSpeed + l * 0.01,
+      frightenedDuration: Math.max(1000, base.frightenedDuration - l * 300),
+    }
+  },
+
+  getScatterDuration(level: number): number {
+    return Math.max(3000, 7000 - (level - 1) * 300)
+  },
+
+  getChaseDuration(level: number): number {
+    return Math.min(30000, 20000 + (level - 1) * 500)
+  },
 } as const

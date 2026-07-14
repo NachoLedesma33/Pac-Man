@@ -112,7 +112,8 @@ export function updateGhost(
     newGhost.homeTimer -= deltaTime
     if (newGhost.homeTimer <= 0) {
       newGhost.isHome = false
-      newGhost.position = { ...GHOST_SPAWNS[newGhost.name] }
+      // Place ghost above the ghost door (y=11), not inside the house
+      newGhost.position = { x: 13, y: 11 }
       newGhost.direction = 'LEFT'
     }
     return newGhost
