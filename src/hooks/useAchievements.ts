@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import type { Achievement, AchievementState, GameStats } from '../types/achievements'
-import { loadAchievements, checkAchievements } from '../utils/achievements'
+import { loadAchievements, checkAchievements, resetAchievements } from '../utils/achievements'
 
 export function useAchievements() {
   const [state, setState] = useState<AchievementState>(() => loadAchievements())
@@ -30,6 +30,10 @@ export function useAchievements() {
     return state.unlocked.includes(id)
   }, [state])
 
+  const reset = useCallback(() => {
+    setState(resetAchievements())
+  }, [])
+
   return {
     state,
     check,
@@ -37,5 +41,6 @@ export function useAchievements() {
     popToast,
     getUnlockedCount,
     isUnlocked,
+    reset,
   }
 }

@@ -1,12 +1,13 @@
 import { ACHIEVEMENTS } from '../../types/achievements'
 import type { AchievementState } from '../../types/achievements'
-import { Trophy, Lock } from 'lucide-react'
+import { Trophy, Lock, RotateCcw } from 'lucide-react'
 
 interface AchievementPanelProps {
   achievementState: AchievementState
+  onReset?: () => void
 }
 
-export function AchievementPanel({ achievementState }: AchievementPanelProps) {
+export function AchievementPanel({ achievementState, onReset }: AchievementPanelProps) {
   const unlockedCount = achievementState.unlocked.length
   const totalCount = ACHIEVEMENTS.length
 
@@ -30,6 +31,22 @@ export function AchievementPanel({ achievementState }: AchievementPanelProps) {
           style={{ width: `${(unlockedCount / totalCount) * 100}%` }}
         />
       </div>
+
+      {/* Reset Button */}
+      {onReset && (
+        <button
+          onClick={onReset}
+          className="
+            w-full mb-4 py-2 bg-brutal-black border-2 border-brutal-black
+            text-brutal-white font-bold text-xs
+            flex items-center justify-center gap-2
+            hover:bg-ghost-red transition-colors cursor-pointer
+          "
+        >
+          <RotateCcw size={14} />
+          RESETEAR LOGROS
+        </button>
+      )}
 
       {/* Achievement List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

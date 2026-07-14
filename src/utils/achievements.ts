@@ -15,6 +15,12 @@ export function saveAchievements(state: AchievementState): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
 }
 
+export function resetAchievements(): AchievementState {
+  const empty = { unlocked: [] }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(empty))
+  return empty
+}
+
 export function checkAchievements(
   stats: GameStats,
   currentState: AchievementState

@@ -22,6 +22,21 @@ function distToCenter(pos: Position): number {
   return Math.abs(pos.x - center.x) + Math.abs(pos.y - center.y)
 }
 
+function getCurrentCell(pos: Position, direction: Direction): Position {
+  const roundX = Math.round(pos.x)
+  const roundY = Math.round(pos.y)
+  if (Math.abs(pos.x - roundX) < 0.02 && Math.abs(pos.y - roundY) < 0.02) {
+    return { x: roundX, y: roundY }
+  }
+  switch (direction) {
+    case 'RIGHT': return { x: Math.floor(pos.x), y: roundY }
+    case 'LEFT':  return { x: Math.ceil(pos.x), y: roundY }
+    case 'DOWN':  return { x: roundX, y: Math.floor(pos.y) }
+    case 'UP':    return { x: roundX, y: Math.ceil(pos.y) }
+    default:      return { x: roundX, y: roundY }
+  }
+}
+
 export function updatePacman(
   pacman: Pacman,
   map: CellType[][],
@@ -36,22 +51,21 @@ export function updatePacman(
     newPacman.mouthOpen = !newPacman.mouthOpen
   }
 
-  const center = cellCenter(newPacman.position)
-  const atCenter = distToCenter(newPacman.position) < 0.02
-
   // Snap to center when very close
-  if (atCenter) {
-    newPacman.position = { ...center }
+  if (distToCenter(newPacman.position) < 0.02) {
+    newPacman.position = { ...cellCenter(newPacman.position) }
   }
 
-  const currentCenter = cellCenter(newPacman.position)
+  const atCenter = distToCenter(newPacman.position) < 0.02
 
   // At cell center: decide next direction and check if we can move
-  if (distToCenter(newPacman.position) < 0.02) {
+  if (atCenter) {
+    const cc = cellCenter(newPacman.position)
+
     // Try nextDirection first (pre-turn)
     if (newPacman.nextDirection && newPacman.nextDirection !== newPacman.direction) {
-      const nx = currentCenter.x + GAME_CONFIG.DIRECTIONS[newPacman.nextDirection].x
-      const ny = currentCenter.y + GAME_CONFIG.DIRECTIONS[newPacman.nextDirection].y
+      const nx = cc.x + GAME_CONFIG.DIRECTIONS[newPacman.nextDirection].x
+      const ny = cc.y + GAME_CONFIG.DIRECTIONS[newPacman.nextDirection].y
       if (isWalkable(map, nx, ny)) {
         newPacman.direction = newPacman.nextDirection
         newPacman.nextDirection = null
@@ -59,14 +73,16 @@ export function updatePacman(
     }
 
     // Check if current direction is blocked
-    const fx = currentCenter.x + GAME_CONFIG.DIRECTIONS[newPacman.direction].x
-    const fy = currentCenter.y + GAME_CONFIG.DIRECTIONS[newPacman.direction].y
+    const fx = cc.x + GAME_CONFIG.DIRECTIONS[newPacman.direction].x
+    const fy = cc.y + GAME_CONFIG.DIRECTIONS[newPacman.direction].y
     if (!isWalkable(map, fx, fy)) {
-      // Blocked: stay at center
-      newPacman.position = { ...currentCenter }
+      newPacman.position = { ...cc }
       return { pacman: newPacman, cellConsumed: null }
     }
   }
+
+  // Current cell based on direction (not Math.round which is wrong between cells)
+  const currentCell = getCurrentCell(newPacman.position, newPacman.direction)
 
   // Speed: ms to cross one cell. Higher = slower.
   const cellTime = 180 / newPacman.speed
@@ -74,12 +90,12 @@ export function updatePacman(
 
   // Move toward next cell center
   const offset = GAME_CONFIG.DIRECTIONS[newPacman.direction]
-  const targetX = currentCenter.x + offset.x
-  const targetY = currentCenter.y + offset.y
+  const targetX = currentCell.x + offset.x
+  const targetY = currentCell.y + offset.y
 
   // Check if target cell is walkable
   if (!isWalkable(map, targetX, targetY)) {
-    newPacman.position = { ...currentCenter }
+    newPacman.position = { x: currentCell.x, y: currentCell.y }
     return { pacman: newPacman, cellConsumed: null }
   }
 
@@ -89,10 +105,8 @@ export function updatePacman(
   const dist = Math.sqrt(dx * dx + dy * dy)
 
   if (dist <= moveAmount) {
-    // Would reach or pass target - snap to target
     newPacman.position = { x: targetX, y: targetY }
   } else {
-    // Move toward target
     const ratio = moveAmount / dist
     newPacman.position = {
       x: newPacman.position.x + dx * ratio,

@@ -38,6 +38,7 @@ export function useKeyboard({ onDirection, onAction, enabled }: UseKeyboardProps
           onDirection('RIGHT')
           break
         case ' ':
+        case 'Escape':
           e.preventDefault()
           onAction('PAUSE')
           break

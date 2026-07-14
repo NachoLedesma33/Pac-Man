@@ -41,7 +41,7 @@ function App() {
     updateGame,
   } = useGameState()
 
-  const { state: achievementState, check, pendingToasts, popToast } = useAchievements()
+  const { state: achievementState, check, pendingToasts, popToast, reset: resetAchievements } = useAchievements()
   const { entries: leaderboardEntries, addEntry, isHighScore } = useLeaderboard()
   const sound = useSound()
   const [showNameInput, setShowNameInput] = useState(false)
@@ -445,7 +445,7 @@ function App() {
 
         {/* Achievements Modal */}
         <Modal isOpen={showAchievements} onClose={() => setShowAchievements(false)} title="LOGROS">
-          <AchievementPanel achievementState={achievementState} />
+          <AchievementPanel achievementState={achievementState} onReset={resetAchievements} />
         </Modal>
 
         {/* Leaderboard Modal */}
