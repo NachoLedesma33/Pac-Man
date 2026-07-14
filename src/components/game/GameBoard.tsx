@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react'
 import type { GameState } from '../../types/game'
 import { GAME_CONFIG } from '../../constants/game'
 import { MAP_WIDTH, MAP_HEIGHT } from '../../constants/map'
@@ -13,8 +14,27 @@ export function GameBoard({ gameState }: GameBoardProps) {
   const mapW = MAP_WIDTH * cellSize
   const mapH = MAP_HEIGHT * cellSize
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        if (width > 0 && height > 0) {
+          setScale(Math.min(width / mapW, height / mapH))
+        }
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [mapW, mapH])
+
   return (
     <div
+      ref={containerRef}
       className="w-full h-full flex items-center justify-center overflow-hidden p-2"
       style={{ imageRendering: 'pixelated' }}
     >
@@ -24,7 +44,7 @@ export function GameBoard({ gameState }: GameBoardProps) {
           width: mapW,
           height: mapH,
           transformOrigin: 'center center',
-          transform: `scale(${Math.min(1, 700 / mapW)})`,
+          transform: `scale(${scale})`,
         }}
       >
         {/* Map Layer */}
