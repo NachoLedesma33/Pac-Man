@@ -62,12 +62,10 @@ export function useGameState() {
   })
   const gameStateRef = useRef(gameState)
   gameStateRef.current = gameState
-  const lastPacmanCellRef = useRef<{ x: number; y: number } | null>(null)
 
   const startGame = useCallback((difficulty: Difficulty = 'NORMAL') => {
     const settings = GAME_CONFIG.DIFFICULTY[difficulty]
     setGameState(createInitialState(difficulty))
-    lastPacmanCellRef.current = null
     setGameStats({
       dotsEaten: 0,
       ghostsEaten: 0,
@@ -125,9 +123,8 @@ export function useGameState() {
       }
 
       // Update Pac-Man
-      const pacmanResult = updatePacman(newState.pacman, newState.map, deltaTime, lastPacmanCellRef.current)
+      const pacmanResult = updatePacman(newState.pacman, newState.map, deltaTime)
       newState.pacman = pacmanResult.pacman
-      lastPacmanCellRef.current = { x: Math.round(newState.pacman.position.x), y: Math.round(newState.pacman.position.y) }
 
       // Handle dot consumption
       if (pacmanResult.cellConsumed) {

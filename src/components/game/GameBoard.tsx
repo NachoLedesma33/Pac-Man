@@ -106,13 +106,12 @@ export function GameBoard({ gameState }: GameBoardProps) {
           }}
         >
           <svg viewBox="0 0 24 24" width="100%" height="100%">
+            <circle cx={12} cy={12} r={11} fill="#FFE600" stroke="#000" strokeWidth={1} />
             <path
-              d={getPacmanPath(pacman.direction, pacman.mouthAngle)}
-              fill="#FFE600"
-              stroke="#000"
-              strokeWidth={1}
+              d={getMouthPath(pacman.direction, pacman.mouthAngle)}
+              fill="#000"
             />
-            <circle cx={12} cy={7} r={2.5} fill="#000" />
+            <circle cx={getEyePos(pacman.direction).x} cy={getEyePos(pacman.direction).y} r={2.5} fill="#000" />
           </svg>
         </div>
 
@@ -168,14 +167,13 @@ export function GameBoard({ gameState }: GameBoardProps) {
   )
 }
 
-function getPacmanPath(direction: string, mouthAngle: number): string {
+function getMouthPath(direction: string, mouthAngle: number): string {
   const rawMouth = Math.abs(Math.sin(mouthAngle))
   const mouth = 0.08 + rawMouth * 0.22
   const cx = 12
   const cy = 12
-  const r = 11
+  const r = 11.5
 
-  // Mouth center angle for each direction
   let mouthCenter: number
   switch (direction) {
     case 'RIGHT': mouthCenter = 0; break
@@ -185,17 +183,23 @@ function getPacmanPath(direction: string, mouthAngle: number): string {
     default:      mouthCenter = 0
   }
 
-  // Start and end of the mouth gap
-  const startAngle = mouthCenter - mouth
-  const endAngle = mouthCenter + mouth
+  const x1 = cx + r * Math.cos(mouthCenter - mouth)
+  const y1 = cy + r * Math.sin(mouthCenter - mouth)
+  const x2 = cx + r * Math.cos(mouthCenter + mouth)
+  const y2 = cy + r * Math.sin(mouthCenter + mouth)
 
-  // Points on the circle at mouth edges
-  const x1 = cx + r * Math.cos(startAngle)
-  const y1 = cy + r * Math.sin(startAngle)
-  const x2 = cx + r * Math.cos(endAngle)
-  const y2 = cy + r * Math.sin(endAngle)
+  return `M${cx},${cy} L${x1},${y1} L${x2},${y2} Z`
+}
 
-  // Draw: center → edge1 → large arc to edge2 → close
-  // large-arc-flag=1 draws the body (big arc), sweep-flag=1 is clockwise
-  return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 1 1 ${x2},${y2} Z`
+function getEyePos(direction: string): { x: number; y: number } {
+  const cx = 12
+  const cy = 12
+  const r = 5
+  switch (direction) {
+    case 'RIGHT': return { x: cx, y: cy - r }
+    case 'LEFT':  return { x: cx, y: cy - r }
+    case 'DOWN':  return { x: cx, y: cy - r }
+    case 'UP':    return { x: cx, y: cy + r }
+    default:      return { x: cx, y: cy - r }
+  }
 }

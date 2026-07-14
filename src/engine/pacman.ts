@@ -25,8 +25,7 @@ function distToCenter(pos: Position): number {
 export function updatePacman(
   pacman: Pacman,
   map: CellType[][],
-  deltaTime: number,
-  lastCell?: Position | null,
+  deltaTime: number
 ): { pacman: Pacman; cellConsumed: Position | null } {
   const newPacman = { ...pacman }
 
@@ -112,16 +111,14 @@ export function updatePacman(
     }
   }
 
-  // Dot consumption: detect when Pac-Man enters a new cell
+  // Dot consumption: check current cell every frame
   let cellConsumed: Position | null = null
-  const newCell = cellCenter(newPacman.position)
-  if (newCell.x >= 0 && newCell.x < map[0].length && newCell.y >= 0 && newCell.y < map.length) {
-    // Check the cell Pac-Man is currently in (not just at center)
-    if (!lastCell || newCell.x !== lastCell.x || newCell.y !== lastCell.y) {
-      const cell = map[newCell.y][newCell.x]
-      if (cell === 'DOT' || cell === 'POWER_PILL') {
-        cellConsumed = { x: newCell.x, y: newCell.y }
-      }
+  const cx = Math.round(newPacman.position.x)
+  const cy = Math.round(newPacman.position.y)
+  if (cx >= 0 && cx < map[0].length && cy >= 0 && cy < map.length) {
+    const cell = map[cy][cx]
+    if (cell === 'DOT' || cell === 'POWER_PILL') {
+      cellConsumed = { x: cx, y: cy }
     }
   }
 
