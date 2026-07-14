@@ -35,20 +35,18 @@ export function GameBoard({ gameState }: GameBoardProps) {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full flex items-center justify-center overflow-hidden p-2"
+      className="w-full h-full flex items-center justify-center p-2"
       style={{ imageRendering: 'pixelated' }}
     >
       <div
         className="relative"
         style={{
-          width: mapW,
-          height: mapH,
-          transformOrigin: 'center center',
-          transform: `scale(${scale})`,
+          width: mapW * scale,
+          height: mapH * scale,
         }}
       >
         {/* Map Layer */}
-        <svg width={mapW} height={mapH} className="absolute inset-0">
+        <svg viewBox={`0 0 ${mapW} ${mapH}`} width={mapW * scale} height={mapH * scale} className="absolute inset-0">
           {map.map((row, y) =>
             row.map((cell, x) => {
               const cx = x * cellSize
@@ -118,10 +116,10 @@ export function GameBoard({ gameState }: GameBoardProps) {
         <div
           className="absolute"
           style={{
-            left: pacman.position.x * cellSize + cellSize / 2,
-            top: pacman.position.y * cellSize + cellSize / 2,
-            width: cellSize * 0.9,
-            height: cellSize * 0.9,
+            left: (pacman.position.x * cellSize + cellSize / 2) * scale,
+            top: (pacman.position.y * cellSize + cellSize / 2) * scale,
+            width: cellSize * 0.9 * scale,
+            height: cellSize * 0.9 * scale,
             transform: 'translate(-50%, -50%)',
           }}
         >
@@ -149,10 +147,10 @@ export function GameBoard({ gameState }: GameBoardProps) {
               key={ghost.name}
               className="absolute"
               style={{
-                left: ghost.position.x * cellSize + cellSize / 2,
-                top: ghost.position.y * cellSize + cellSize / 2,
-                width: cellSize * 0.85,
-                height: cellSize * 0.85,
+                left: (ghost.position.x * cellSize + cellSize / 2) * scale,
+                top: (ghost.position.y * cellSize + cellSize / 2) * scale,
+                width: cellSize * 0.85 * scale,
+                height: cellSize * 0.85 * scale,
                 transform: 'translate(-50%, -50%)',
               }}
             >
