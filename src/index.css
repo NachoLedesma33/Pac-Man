@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  /* Arcade Colors */
+  --color-arcade-yellow: #FFE600;
+  --color-arcade-yellow-dark: #CCB800;
+  --color-arcade-blue: #2121DE;
+  --color-arcade-blue-light: #4242FF;
+
+  /* Ghost Colors */
+  --color-ghost-red: #FF0000;
+  --color-ghost-pink: #FFB8FF;
+  --color-ghost-cyan: #00FFFF;
+  --color-ghost-orange: #FFB852;
+
+  /* Neo-Brutalist Palette */
+  --color-brutal-black: #000000;
+  --color-brutal-white: #FFFFFF;
+  --color-brutal-cream: #FFF9DB;
+  --color-brutal-gray: #1A1A2E;
+
+  /* Theme Colors - Light */
+  --color-bg-primary-light: #FFFFFF;
+  --color-bg-secondary-light: #FFF9DB;
+  --color-text-primary-light: #000000;
+
+  /* Theme Colors - Dark */
+  --color-bg-primary-dark: #0A0A0A;
+  --color-bg-secondary-dark: #1A1A2E;
+  --color-text-primary-dark: #F0F0F0;
+
+  /* Fonts */
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-display: 'Impact', 'Arial Black', sans-serif;
+}
+
+/* Base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-mono);
+}
+
+body {
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light theme */
+[data-theme="light"] body {
+  background-color: var(--color-bg-primary-light);
+  color: var(--color-text-primary-light);
+}
+
+/* Dark theme */
+[data-theme="dark"] body {
+  background-color: var(--color-bg-primary-dark);
+  color: var(--color-text-primary-dark);
+}
+
+/* CRT Scanlines overlay */
+.crt-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  opacity: 0.03;
+}
+
+/* CRT Vignette */
+.crt-vignette {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.5);
+}
