@@ -1,6 +1,6 @@
 import type { Pacman, Direction, CellType, Position } from '../types/game'
 import { GAME_CONFIG } from '../constants/game'
-import { canMove, wrapPosition } from './map'
+import { canMove, isWalkable } from './map'
 
 export function createPacman(spawn: Position, speed: number): Pacman {
   return {
@@ -13,6 +13,19 @@ export function createPacman(spawn: Position, speed: number): Pacman {
   }
 }
 
+function isAtCellCenter(pos: Position): boolean {
+  const eps = 0.05
+  return Math.abs(pos.x - Math.round(pos.x)) < eps &&
+         Math.abs(pos.y - Math.round(pos.y)) < eps
+}
+
+function snapToCell(pos: Position): Position {
+  return {
+    x: Math.round(pos.x),
+    y: Math.round(pos.y),
+  }
+}
+
 export function updatePacman(
   pacman: Pacman,
   map: CellType[][],
@@ -21,43 +34,70 @@ export function updatePacman(
   const newPacman = { ...pacman }
 
   // Animate mouth
-  newPacman.mouthAngle += deltaTime * 0.01
+  newPacman.mouthAngle += deltaTime * 0.008
   if (newPacman.mouthAngle > Math.PI) {
     newPacman.mouthAngle = 0
     newPacman.mouthOpen = !newPacman.mouthOpen
   }
 
-  // Try to change direction if nextDirection is set
-  if (newPacman.nextDirection && newPacman.nextDirection !== newPacman.direction) {
-    if (canMove(map, newPacman.position, newPacman.nextDirection)) {
+  // Movement: cells per second based on speed multiplier
+  // Speed 1.0 = 8 cells/second at 1 cell per frame at 8fps... let's do simpler
+  // moveAmount = speed * deltaTime / cellTime
+  // We want Pac-Man to move smoothly between cells
+  // At speed 1.0, it should take ~125ms to cross one cell
+  const cellTime = 125 / newPacman.speed
+  const moveAmount = deltaTime / cellTime
+
+  const atCenter = isAtCellCenter(newPacman.position)
+
+  if (atCenter) {
+    // Snap to exact center
+    newPacman.position = snapToCell(newPacman.position)
+
+    // Try nextDirection first
+    if (newPacman.nextDirection && canMove(map, newPacman.position, newPacman.nextDirection)) {
       newPacman.direction = newPacman.nextDirection
       newPacman.nextDirection = null
     }
-  }
 
-  // Calculate movement based on speed and delta time
-  const moveAmount = newPacman.speed * (deltaTime / 1000) * 8
-
-  // Check if we can move in current direction
-  if (canMove(map, newPacman.position, newPacman.direction)) {
-    const offset = GAME_CONFIG.DIRECTIONS[newPacman.direction]
-    newPacman.position = {
-      x: newPacman.position.x + offset.x * moveAmount,
-      y: newPacman.position.y + offset.y * moveAmount,
+    // Check if we can continue in current direction
+    if (!canMove(map, newPacman.position, newPacman.direction)) {
+      // Hit a wall - stop by snapping and returning
+      return { pacman: newPacman, cellConsumed: null }
     }
-
-    // Wrap through tunnels
-    newPacman.position = wrapPosition(newPacman.position)
   }
 
-  // Determine which cell Pac-Man is currently on (for dot consumption)
+  // Move in current direction
+  const offset = GAME_CONFIG.DIRECTIONS[newPacman.direction]
+  let newX = newPacman.position.x + offset.x * moveAmount
+  let newY = newPacman.position.y + offset.y * moveAmount
+
+  // Check if we would pass through a wall
+  const nextCellX = Math.round(newX + offset.x * 0.1)
+  const nextCellY = Math.round(newY + offset.y * 0.1)
+
+  if (!isWalkable(map, nextCellX, nextCellY)) {
+    // Would hit wall - snap to current cell center
+    newPacman.position = snapToCell(newPacman.position)
+  } else {
+    newPacman.position = { x: newX, y: newY }
+  }
+
+  // Handle tunnel wrapping
+  if (newPacman.position.x < -0.5) {
+    newPacman.position = { x: map[0].length - 0.5, y: newPacman.position.y }
+  } else if (newPacman.position.x > map[0].length - 0.5) {
+    newPacman.position = { x: -0.5, y: newPacman.position.y }
+  }
+
+  // Check dot consumption (only at cell center)
   const cellX = Math.round(newPacman.position.x)
   const cellY = Math.round(newPacman.position.y)
   let cellConsumed: Position | null = null
 
-  // Check if Pac-Man is close enough to center of cell to consume
-  const distToCenter = Math.abs(newPacman.position.x - cellX) + Math.abs(newPacman.position.y - cellY)
-  if (distToCenter < 0.3 && cellX >= 0 && cellX < map[0].length && cellY >= 0 && cellY < map.length) {
+  if (isAtCellCenter(newPacman.position) &&
+      cellX >= 0 && cellX < map[0].length &&
+      cellY >= 0 && cellY < map.length) {
     const cell = map[cellY][cellX]
     if (cell === 'DOT' || cell === 'POWER_PILL') {
       cellConsumed = { x: cellX, y: cellY }

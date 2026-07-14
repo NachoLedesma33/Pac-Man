@@ -22,12 +22,12 @@ function createInitialState(difficulty: Difficulty): GameState {
   const map = createMap()
 
   return {
-    pacman: createPacman(PACMAN_SPAWN, settings.pacmanSpeed * 5),
+    pacman: createPacman(PACMAN_SPAWN, settings.pacmanSpeed),
     ghosts: [
-      createGhost('BLINKY', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[0]),
-      createGhost('PINKY', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[1]),
-      createGhost('INKY', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[2]),
-      createGhost('CLYDE', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[3]),
+      createGhost('BLINKY', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[0]),
+      createGhost('PINKY', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[1]),
+      createGhost('INKY', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[2]),
+      createGhost('CLYDE', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[3]),
     ],
     map,
     score: 0,
@@ -184,8 +184,8 @@ export function useGameState() {
           newState.pacman.direction,
           blinkyPos,
           deltaTime,
-          settings.ghostSpeed * 5,
-          settings.frightenedSpeed * 5
+          settings.ghostSpeed,
+          settings.frightenedSpeed
         )
       )
 
@@ -216,12 +216,12 @@ export function useGameState() {
               localStorage.setItem('pacman-highscore', newState.highScore.toString())
             }
           } else {
-            newState.pacman = createPacman(PACMAN_SPAWN, settings.pacmanSpeed * 5)
+            newState.pacman = createPacman(PACMAN_SPAWN, settings.pacmanSpeed)
             newState.ghosts = [
-              createGhost('BLINKY', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[0]),
-              createGhost('PINKY', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[1]),
-              createGhost('INKY', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[2]),
-              createGhost('CLYDE', settings.ghostSpeed * 5, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[3]),
+              createGhost('BLINKY', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[0]),
+              createGhost('PINKY', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[1]),
+              createGhost('INKY', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[2]),
+              createGhost('CLYDE', settings.ghostSpeed, GAME_CONFIG.TIMING.GHOST_HOME_DELAY[3]),
             ]
             newState.frightenedTimeRemaining = 0
             newState.comboCount = 0

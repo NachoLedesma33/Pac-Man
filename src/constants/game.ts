@@ -1,7 +1,7 @@
 import type { DifficultySettings } from '../types/game'
 
 export const GAME_CONFIG = {
-  CELL_SIZE: 16,
+  CELL_SIZE: 20,
   FPS: 60,
 
   POINTS: {
@@ -34,15 +34,15 @@ export const GAME_CONFIG = {
     } as DifficultySettings,
     NORMAL: {
       pacmanSpeed: 1.0,
-      ghostSpeed: 1.0,
-      frightenedSpeed: 0.5,
+      ghostSpeed: 0.9,
+      frightenedSpeed: 0.45,
       frightenedDuration: 6000,
       startingLives: 3,
     } as DifficultySettings,
     HARDCORE: {
-      pacmanSpeed: 1.0,
-      ghostSpeed: 1.2,
-      frightenedSpeed: 0.6,
+      pacmanSpeed: 1.1,
+      ghostSpeed: 1.1,
+      frightenedSpeed: 0.55,
       frightenedDuration: 3000,
       startingLives: 3,
     } as DifficultySettings,

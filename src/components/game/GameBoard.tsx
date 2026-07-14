@@ -9,31 +9,27 @@ interface GameBoardProps {
 export function GameBoard({ gameState }: GameBoardProps) {
   const { map, pacman, ghosts, frightenedTimeRemaining } = gameState
 
+  const cellSize = GAME_CONFIG.CELL_SIZE
+  const mapW = MAP_WIDTH * cellSize
+  const mapH = MAP_HEIGHT * cellSize
+
   return (
     <div
-      className="w-full h-full flex items-center justify-center"
-      style={{
-        imageRendering: 'pixelated',
-      }}
+      className="w-full h-full flex items-center justify-center overflow-hidden"
+      style={{ imageRendering: 'pixelated' }}
     >
       <div
         className="relative"
         style={{
-          width: MAP_WIDTH * GAME_CONFIG.CELL_SIZE,
-          height: MAP_HEIGHT * GAME_CONFIG.CELL_SIZE,
-          transform: `scale(${Math.min(1, 600 / (MAP_WIDTH * GAME_CONFIG.CELL_SIZE))})`,
+          width: mapW,
+          height: mapH,
           transformOrigin: 'center center',
         }}
       >
         {/* Map Layer */}
-        <svg
-          width={MAP_WIDTH * GAME_CONFIG.CELL_SIZE}
-          height={MAP_HEIGHT * GAME_CONFIG.CELL_SIZE}
-          className="absolute inset-0"
-        >
+        <svg width={mapW} height={mapH} className="absolute inset-0">
           {map.map((row, y) =>
             row.map((cell, x) => {
-              const cellSize = GAME_CONFIG.CELL_SIZE
               const cx = x * cellSize
               const cy = y * cellSize
 
@@ -58,7 +54,7 @@ export function GameBoard({ gameState }: GameBoardProps) {
                     key={`${x}-${y}`}
                     cx={cx + cellSize / 2}
                     cy={cy + cellSize / 2}
-                    r={2}
+                    r={2.5}
                     fill="#FFB8AE"
                   />
                 )
@@ -70,7 +66,7 @@ export function GameBoard({ gameState }: GameBoardProps) {
                     key={`${x}-${y}`}
                     cx={cx + cellSize / 2}
                     cy={cy + cellSize / 2}
-                    r={5}
+                    r={6}
                     fill="#FFB8AE"
                     className="animate-pulse"
                   />
@@ -97,28 +93,24 @@ export function GameBoard({ gameState }: GameBoardProps) {
 
         {/* Pac-Man */}
         <div
-          className="absolute transition-none"
+          className="absolute"
           style={{
-            left: pacman.position.x * GAME_CONFIG.CELL_SIZE,
-            top: pacman.position.y * GAME_CONFIG.CELL_SIZE,
-            width: GAME_CONFIG.CELL_SIZE,
-            height: GAME_CONFIG.CELL_SIZE,
+            left: pacman.position.x * cellSize,
+            top: pacman.position.y * cellSize,
+            width: cellSize,
+            height: cellSize,
             transform: 'translate(-50%, -50%)',
+            transition: 'none',
           }}
         >
-          <svg viewBox="0 0 16 16" width={GAME_CONFIG.CELL_SIZE} height={GAME_CONFIG.CELL_SIZE}>
+          <svg viewBox="0 0 20 20" width={cellSize} height={cellSize}>
             <path
               d={getPacmanPath(pacman.direction, pacman.mouthAngle)}
               fill="#FFE600"
               stroke="#000"
               strokeWidth={0.5}
             />
-            <circle
-              cx={8}
-              cy={5}
-              r={1.5}
-              fill="#000"
-            />
+            <circle cx={10} cy={6} r={2} fill="#000" />
           </svg>
         </div>
 
@@ -128,43 +120,42 @@ export function GameBoard({ gameState }: GameBoardProps) {
 
           const isFrightened = ghost.mode === 'FRIGHTENED'
           const isEaten = ghost.mode === 'EATEN'
-          const flashWarning = isFrightened && frightenedTimeRemaining < 2000 && Math.floor(frightenedTimeRemaining / 200) % 2 === 0
+          const flashWarning = isFrightened && frightenedTimeRemaining < 2000 &&
+            Math.floor(frightenedTimeRemaining / 200) % 2 === 0
 
           return (
             <div
               key={ghost.name}
-              className="absolute transition-none"
+              className="absolute"
               style={{
-                left: ghost.position.x * GAME_CONFIG.CELL_SIZE,
-                top: ghost.position.y * GAME_CONFIG.CELL_SIZE,
-                width: GAME_CONFIG.CELL_SIZE,
-                height: GAME_CONFIG.CELL_SIZE,
+                left: ghost.position.x * cellSize,
+                top: ghost.position.y * cellSize,
+                width: cellSize,
+                height: cellSize,
                 transform: 'translate(-50%, -50%)',
+                transition: 'none',
               }}
             >
-              <svg viewBox="0 0 16 16" width={GAME_CONFIG.CELL_SIZE} height={GAME_CONFIG.CELL_SIZE}>
+              <svg viewBox="0 0 20 20" width={cellSize} height={cellSize}>
                 {isEaten ? (
-                  // Just eyes for eaten ghost
                   <>
-                    <circle cx={5} cy={7} r={2} fill="#FFF" stroke="#000" strokeWidth={0.5} />
-                    <circle cx={11} cy={7} r={2} fill="#FFF" stroke="#000" strokeWidth={0.5} />
-                    <circle cx={5} cy={7} r={1} fill="#00F" />
-                    <circle cx={11} cy={7} r={1} fill="#00F" />
+                    <circle cx={6} cy={9} r={2.5} fill="#FFF" stroke="#000" strokeWidth={0.5} />
+                    <circle cx={14} cy={9} r={2.5} fill="#FFF" stroke="#000" strokeWidth={0.5} />
+                    <circle cx={6} cy={9} r={1.2} fill="#00F" />
+                    <circle cx={14} cy={9} r={1.2} fill="#00F" />
                   </>
                 ) : (
                   <>
-                    {/* Ghost body */}
                     <path
-                      d="M1 15 L1 8 Q1 1 8 1 Q15 1 15 8 L15 15 L12 12 L9 15 L7 15 L4 12 Z"
+                      d="M1 19 L1 10 Q1 1 10 1 Q19 1 19 10 L19 19 L15 15.5 L12 19 L8 19 L5 15.5 Z"
                       fill={flashWarning ? '#FFF' : isFrightened ? GAME_CONFIG.COLORS.FRIGHTENED : ghost.color}
                       stroke="#000"
                       strokeWidth={0.5}
                     />
-                    {/* Eyes */}
-                    <circle cx={5} cy={7} r={2} fill="#FFF" />
-                    <circle cx={11} cy={7} r={2} fill="#FFF" />
-                    <circle cx={5} cy={7} r={1} fill={isFrightened ? '#FFF' : '#00F'} />
-                    <circle cx={11} cy={7} r={1} fill={isFrightened ? '#FFF' : '#00F'} />
+                    <circle cx={7} cy={9} r={2.5} fill="#FFF" />
+                    <circle cx={13} cy={9} r={2.5} fill="#FFF" />
+                    <circle cx={7} cy={9} r={1.2} fill={isFrightened ? '#FFF' : '#00F'} />
+                    <circle cx={13} cy={9} r={1.2} fill={isFrightened ? '#FFF' : '#00F'} />
                   </>
                 )}
               </svg>
@@ -178,9 +169,9 @@ export function GameBoard({ gameState }: GameBoardProps) {
 
 function getPacmanPath(direction: string, mouthAngle: number): string {
   const mouth = Math.abs(Math.sin(mouthAngle)) * 0.3
-  const centerX = 8
-  const centerY = 8
-  const radius = 7
+  const cx = 10
+  const cy = 10
+  const r = 9
 
   let startAngle: number
   let endAngle: number
@@ -207,12 +198,12 @@ function getPacmanPath(direction: string, mouthAngle: number): string {
       endAngle = Math.PI * 2 - mouth
   }
 
-  const x1 = centerX + radius * Math.cos(startAngle)
-  const y1 = centerY + radius * Math.sin(startAngle)
-  const x2 = centerX + radius * Math.cos(endAngle)
-  const y2 = centerY + radius * Math.sin(endAngle)
+  const x1 = cx + r * Math.cos(startAngle)
+  const y1 = cy + r * Math.sin(startAngle)
+  const x2 = cx + r * Math.cos(endAngle)
+  const y2 = cy + r * Math.sin(endAngle)
 
   const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
 
-  return `M${centerX},${centerY} L${x1},${y1} A${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`
+  return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z`
 }

@@ -17,7 +17,7 @@ import { useKeyboard } from './hooks/useKeyboard'
 import { useAchievements } from './hooks/useAchievements'
 import { useLeaderboard } from './components/game/Leaderboard'
 import { useSound } from './hooks/useSound'
-import { Settings, Pause, Play, RotateCcw, Trophy, Award, Volume2, VolumeX } from 'lucide-react'
+import { Settings, Pause, Play, RotateCcw, Trophy, Award, Volume2, VolumeX, Home } from 'lucide-react'
 import type { Direction, Difficulty } from './types/game'
 
 type GameScreen = 'menu' | 'playing' | 'gameover'
@@ -156,6 +156,10 @@ function App() {
     addToast('Juego Reiniciado', `Dificultad: ${difficulty}`, 'info')
   }, [startGame, difficulty, soundEnabled, sound, addToast])
 
+  const handleBackToMenu = useCallback(() => {
+    setScreen('menu')
+  }, [])
+
   // Check for game over
   useEffect(() => {
     if (screen === 'playing' && gameState.isGameOver) {
@@ -183,23 +187,38 @@ function App() {
         {screen === 'menu' ? (
           <WelcomeScreen onStart={handleStart} />
         ) : (
-          <div className="min-h-screen flex flex-col items-center justify-center p-4">
+          <div className="min-h-screen flex flex-col items-center justify-center p-2 md:p-4">
             {/* Header */}
-            <header className="flex items-center justify-between w-full max-w-2xl mb-4">
-              <h1
-                className="text-3xl md:text-5xl font-black text-arcade-yellow tracking-tighter"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  textShadow: '3px 3px 0px #000, 5px 5px 0px #FFE600',
-                }}
-              >
-                PAC-MAN
-              </h1>
-              <div className="flex items-center gap-2">
+            <header className="flex items-center justify-between w-full max-w-4xl mb-2 md:mb-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleBackToMenu}
+                  className="
+                    w-10 h-10 md:w-12 md:h-12 bg-brutal-gray border-4 border-brutal-black
+                    flex items-center justify-center text-brutal-white
+                    shadow-[3px_3px_0px_0px_#FFE600]
+                    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                    transition-all duration-100 cursor-pointer
+                  "
+                  aria-label="Back to Menu"
+                >
+                  <Home size={18} />
+                </button>
+                <h1
+                  className="text-2xl md:text-5xl font-black text-arcade-yellow tracking-tighter"
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    textShadow: '3px 3px 0px #000, 5px 5px 0px #FFE600',
+                  }}
+                >
+                  PAC-MAN
+                </h1>
+              </div>
+              <div className="flex items-center gap-1 md:gap-2">
                 <button
                   onClick={togglePause}
                   className="
-                    w-10 h-10 bg-brutal-gray border-4 border-brutal-black
+                    w-10 h-10 md:w-12 md:h-12 bg-brutal-gray border-4 border-brutal-black
                     flex items-center justify-center text-brutal-white
                     shadow-[3px_3px_0px_0px_#FFE600]
                     active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
@@ -212,7 +231,7 @@ function App() {
                 <button
                   onClick={() => setShowAchievements(true)}
                   className="
-                    w-10 h-10 bg-brutal-gray border-4 border-brutal-black
+                    w-10 h-10 md:w-12 md:h-12 bg-brutal-gray border-4 border-brutal-black
                     flex items-center justify-center text-brutal-white
                     shadow-[3px_3px_0px_0px_#FFE600]
                     active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
@@ -225,7 +244,7 @@ function App() {
                 <button
                   onClick={() => setShowLeaderboard(true)}
                   className="
-                    w-10 h-10 bg-brutal-gray border-4 border-brutal-black
+                    w-10 h-10 md:w-12 md:h-12 bg-brutal-gray border-4 border-brutal-black
                     flex items-center justify-center text-brutal-white
                     shadow-[3px_3px_0px_0px_#FFE600]
                     active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
@@ -238,7 +257,7 @@ function App() {
                 <button
                   onClick={() => setSoundEnabled(prev => !prev)}
                   className={`
-                    w-10 h-10 border-4 border-brutal-black
+                    w-10 h-10 md:w-12 md:h-12 border-4 border-brutal-black
                     flex items-center justify-center
                     shadow-[3px_3px_0px_0px_#FFE600]
                     active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
@@ -252,7 +271,7 @@ function App() {
                 <button
                   onClick={() => setShowSettings(true)}
                   className="
-                    w-10 h-10 bg-brutal-gray border-4 border-brutal-black
+                    w-10 h-10 md:w-12 md:h-12 bg-brutal-gray border-4 border-brutal-black
                     flex items-center justify-center text-brutal-white
                     shadow-[3px_3px_0px_0px_#FFE600]
                     active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
@@ -267,7 +286,7 @@ function App() {
             </header>
 
             {/* Score Board */}
-            <div className="w-full max-w-2xl mb-4">
+            <div className="w-full max-w-4xl mb-2 md:mb-4">
               <ScoreBoard
                 score={gameState.score}
                 highScore={gameState.highScore}
@@ -277,10 +296,10 @@ function App() {
             </div>
 
             {/* Arcade Cabinet */}
-            <div className="w-full max-w-2xl">
+            <div className="w-full max-w-4xl">
               <ArcadeCabinet>
                 {gameState.isGameOver ? (
-                  <div className="w-full h-full min-h-[300px] md:min-h-[400px] flex items-center justify-center bg-brutal-black">
+                  <div className="w-full h-full min-h-[400px] md:min-h-[500px] flex items-center justify-center bg-brutal-black">
                     <div className="text-center">
                       <p
                         className="text-ghost-red text-4xl md:text-6xl font-black"
@@ -291,33 +310,69 @@ function App() {
                       <p className="text-arcade-yellow text-xl mt-4 font-bold">
                         Puntuación: {gameState.score.toLocaleString()}
                       </p>
-                      <button
-                        onClick={handleRestart}
-                        className="
-                          mt-6 px-6 py-3
-                          bg-arcade-yellow text-brutal-black
-                          border-4 border-brutal-black
-                          font-bold text-lg
-                          shadow-[4px_4px_0px_0px_#000]
-                          active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
-                          transition-all duration-100 cursor-pointer
-                          flex items-center gap-2 mx-auto
-                          hover:bg-arcade-yellow-dark
-                        "
-                      >
-                        <RotateCcw size={20} />
-                        REINICIAR
-                      </button>
+                      <div className="flex gap-3 mt-6 justify-center">
+                        <button
+                          onClick={handleRestart}
+                          className="
+                            px-6 py-3
+                            bg-arcade-yellow text-brutal-black
+                            border-4 border-brutal-black
+                            font-bold text-lg
+                            shadow-[4px_4px_0px_0px_#000]
+                            active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                            transition-all duration-100 cursor-pointer
+                            flex items-center gap-2
+                            hover:bg-arcade-yellow-dark
+                          "
+                        >
+                          <RotateCcw size={20} />
+                          REINICIAR
+                        </button>
+                        <button
+                          onClick={handleBackToMenu}
+                          className="
+                            px-6 py-3
+                            bg-brutal-gray text-brutal-white
+                            border-4 border-brutal-black
+                            font-bold text-lg
+                            shadow-[4px_4px_0px_0px_#FFE600]
+                            active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                            transition-all duration-100 cursor-pointer
+                            flex items-center gap-2
+                          "
+                        >
+                          <Home size={20} />
+                          MENÚ
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : gameState.isPaused ? (
-                  <div className="w-full h-full min-h-[300px] md:min-h-[400px] flex items-center justify-center bg-brutal-black">
-                    <p
-                      className="text-arcade-yellow text-4xl md:text-6xl font-black animate-pulse"
-                      style={{ fontFamily: 'var(--font-display)', textShadow: '3px 3px 0px #000' }}
-                    >
-                      PAUSED
-                    </p>
+                  <div className="w-full h-full min-h-[400px] md:min-h-[500px] flex items-center justify-center bg-brutal-black">
+                    <div className="text-center">
+                      <p
+                        className="text-arcade-yellow text-4xl md:text-6xl font-black animate-pulse"
+                        style={{ fontFamily: 'var(--font-display)', textShadow: '3px 3px 0px #000' }}
+                      >
+                        PAUSED
+                      </p>
+                      <button
+                        onClick={handleBackToMenu}
+                        className="
+                          mt-6 px-5 py-2
+                          bg-brutal-gray text-brutal-white
+                          border-4 border-brutal-black
+                          font-bold text-sm
+                          shadow-[3px_3px_0px_0px_#FFE600]
+                          active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                          transition-all duration-100 cursor-pointer
+                          flex items-center gap-2 mx-auto
+                        "
+                      >
+                        <Home size={16} />
+                        MENÚ PRINCIPAL
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <GameBoard gameState={gameState} />
