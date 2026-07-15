@@ -2,7 +2,7 @@
 
 Juego clásico de Pac-Man con estética Neo-Brutalista y estilo retro arcade. PWA instalable desde el navegador.
 
-**Demo:** [https://pac-man.vercel.app](https://pac-man.vercel.app)
+**Demo:** [https://pac-man-iota.vercel.app](https://pac-man-iota.vercel.app)
 
 ## Stack
 
